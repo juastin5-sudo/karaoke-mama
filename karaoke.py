@@ -53,3 +53,4 @@ if st.button("✨ ¡GENERAR PISTA!"):
                 st.error(f"Hubo un error: {e}")
                 st.info("Tip: Asegúrate de que el archivo cookies.txt esté en GitHub.")
 
+
