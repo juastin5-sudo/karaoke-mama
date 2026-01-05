@@ -57,6 +57,10 @@ if st.button("✨ ¡CREAR MI PISTA MÁGICA!"):
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'noplaylist': True,
+                    'nocheckcertificate': True,
+'quiet': True,
+'no_warnings': True,
+'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
                     'outtmpl': 'cancion_mama',
                 }
@@ -99,4 +103,5 @@ if st.button("✨ ¡CREAR MI PISTA MÁGICA!"):
 
 st.write("---")
 st.markdown("<p style='text-align: center; font-size: 0.8em; color: gray;'>Hecho con amor por su hijo favorito</p>", unsafe_allow_html=True)
+
 
