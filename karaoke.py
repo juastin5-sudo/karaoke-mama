@@ -27,7 +27,7 @@ if st.button("✨ ¡GENERAR PISTA!"):
                     'format': 'bestaudio/best',
                     'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
                     'outtmpl': 'cancion_mama',
-                    'cookiefile': 'youtube.com_cookies.txt', # <--- USA TUS LLAVES
+                    'cookiefile': 'www.youtube.com_cookies.txt', # <--- USA TUS LLAVES
                     'nocheckcertificate': True,
                     'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                 }
@@ -52,3 +52,4 @@ if st.button("✨ ¡GENERAR PISTA!"):
             except Exception as e:
                 st.error(f"Hubo un error: {e}")
                 st.info("Tip: Asegúrate de que el archivo cookies.txt esté en GitHub.")
+
