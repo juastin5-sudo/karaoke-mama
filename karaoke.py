@@ -2,15 +2,12 @@ import streamlit as st
 import yt_dlp
 import os
 from pydub import AudioSegment
-from static_ffmpeg import add_paths
 
 # Intentar importar audioop (para versiones viejas) o ignorarlo (para nuevas)
 try:
     import audioop
 except ImportError:
     st.warning("Nota: Usando motor de audio alternativo.")
-
-add_paths()
 
 st.set_page_config(page_title="Karaoke de Mamá", page_icon="🎤")
 st.title("🎤 Studio de Pistas para Mamá")
@@ -45,3 +42,4 @@ if st.button("✨ Generar Pista"):
                 os.remove("pista_lista.mp3")
             except Exception as e:
                 st.error(f"Error: {e}")
+
