@@ -1,3 +1,6 @@
+import audioop_lts
+import sys
+sys.modules['audioop'] = audioop_lts
 import yt_dlp
 import os
 from pydub import AudioSegment
@@ -49,4 +52,5 @@ print(f"✅ ¡LISTO! El archivo se guardó como: {nombre_final}")
 
 # Limpieza: borramos el temporal
 if os.path.exists("cancion_temporal.mp3"):
+
     os.remove("cancion_temporal.mp3")
