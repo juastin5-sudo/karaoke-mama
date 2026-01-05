@@ -5,51 +5,45 @@ from pydub import AudioSegment
 
 st.set_page_config(page_title="Karaoke VIP para Mamá", page_icon="🎤")
 
-# Diseño "Modo Oscuro Elegante"
 st.markdown("""
     <style>
     .stApp { background-color: #0e1117; color: white; }
-    .stButton>button { width: 100%; border-radius: 20px; background-color: #1DB954; color: white; border: none; font-weight: bold; }
+    .stButton>button { background-color: #FF4B4B; color: white; border-radius: 20px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎤 Studio Mágico de Mamá")
-st.write("Escribe el nombre de la canción o pega el link de YouTube.")
+st.title("🎤 El Studio de Mamá")
+st.write("Escribe el nombre de la canción y yo hago el puente por ti.")
 
-# Input de búsqueda
-busqueda = st.text_input("🔍 ¿Qué canción quieres cantar hoy?", placeholder="Ej: La gata bajo la lluvia karaoke")
+busqueda = st.text_input("🔍 ¿Qué canción buscamos hoy?", placeholder="Ej: Amor Eterno Karaoke")
 tono = st.select_slider("🎶 Ajustar Tono:", options=[-4, -3, -2, -1, 0, 1, 2], value=-2)
 
 if st.button("✨ PREPARAR MI PISTA"):
     if busqueda:
-        with st.status("🛠️ Iniciando puente de audio...", expanded=True) as status:
+        with st.status("🚀 Conectando con el puente de audio...", expanded=True) as status:
             try:
-                # El "Puente": Buscamos en YouTube pero descargamos a través de un proxy de audio
+                # EL TRUCO: Usamos un servidor "invitado" para saltar el bot-check
                 ydl_opts = {
                     'format': 'bestaudio/best',
-                    # 'default_search': 'ytsearch',  <-- Esto permite buscar por nombre si no hay link
                     'outtmpl': 'pista_temporal',
                     'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
+                    # Este comando le dice a YouTube: "Soy un usuario de Android" (que casi nunca pide bot-check)
+                    'extractor_args': {'youtube': {'player_client': ['android']}}, 
                     'nocheckcertificate': True,
                     'quiet': True,
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36'
                 }
 
-                # Si no es un link, buscamos el video
+                # Si no es link, busca automáticamente
                 query = busqueda if "youtube.com" in busqueda or "youtu.be" in busqueda else f"ytsearch1:{busqueda}"
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    st.write("📡 Buscando en el servidor de música...")
+                    st.write("📡 Descargando audio sin bloqueos...")
                     ydl.download([query])
 
                 st.write("🎹 Ajustando el tono perfecto...")
-                # Cargamos el archivo que llegó al "puente"
                 audio = AudioSegment.from_file("pista_temporal.mp3")
-                
-                # Proceso de cambio de tono
                 new_rate = int(audio.frame_rate * (2.0 ** (tono / 12.0)))
                 pista = audio._spawn(audio.raw_data, overrides={'frame_rate': new_rate}).set_frame_rate(audio.frame_rate)
-                
                 pista.export("pista_final.mp3", format="mp3")
                 
                 status.update(label="✅ ¡Tu pista está lista!", state="complete")
@@ -59,10 +53,9 @@ if st.button("✨ PREPARAR MI PISTA"):
                 with open("pista_final.mp3", "rb") as f:
                     st.download_button("⬇️ DESCARGAR MP3", f, file_name="pista_karaoke.mp3")
                 
-                # Limpiar
                 os.remove("pista_temporal.mp3")
                 os.remove("pista_final.mp3")
 
             except Exception as e:
-                st.error("El servidor de música está ocupado. Intenta con otro nombre de canción.")
-                st.info(f"Nota: {e}")
+                st.error("YouTube está muy estricto hoy. Por favor, intenta escribir el nombre de la canción de forma diferente.")
+                st.info("Tip: Intenta poner el nombre del artista + 'karaoke'.")
