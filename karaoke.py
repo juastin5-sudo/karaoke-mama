@@ -3,7 +3,7 @@ import yt_dlp
 import os
 from pydub import AudioSegment
 
-st.set_page_config(page_title="Karaoke VIP para Mamá", page_icon="🎤")
+st.set_page_config(page_title="Karaoke Studio VIP", page_icon="🎤")
 
 st.markdown("""
     <style>
@@ -12,32 +12,31 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎤 El Studio de Mamá")
-st.write("Escribe el nombre de la canción y yo hago el puente por ti.")
+st.title("🎤 Studio Mágico de Mamá")
+st.write("Escribe el nombre de la canción. Ahora usamos un motor de búsqueda más libre.")
 
-busqueda = st.text_input("🔍 ¿Qué canción buscamos hoy?", placeholder="Ej: Amor Eterno Karaoke")
+busqueda = st.text_input("🔍 ¿Qué canción quieres hoy?", placeholder="Ej: Amor Eterno Rocio Durcal")
 tono = st.select_slider("🎶 Ajustar Tono:", options=[-4, -3, -2, -1, 0, 1, 2], value=-2)
 
 if st.button("✨ PREPARAR MI PISTA"):
     if busqueda:
-        with st.status("🚀 Conectando con el puente de audio...", expanded=True) as status:
+        with st.status("🚀 Buscando en la red de música libre...", expanded=True) as status:
             try:
-                # EL TRUCO: Usamos un servidor "invitado" para saltar el bot-check
+                # CAMBIAMOS EL MOTOR A SOUNDCLOUD (scsearch)
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'outtmpl': 'pista_temporal',
                     'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
-                    # Este comando le dice a YouTube: "Soy un usuario de Android" (que casi nunca pide bot-check)
-                    'extractor_args': {'youtube': {'player_client': ['android']}}, 
+                    'default_search': 'scsearch', # <--- AQUÍ ESTÁ EL CAMBIO
                     'nocheckcertificate': True,
                     'quiet': True,
                 }
 
-                # Si no es link, busca automáticamente
-                query = busqueda if "youtube.com" in busqueda or "youtu.be" in busqueda else f"ytsearch1:{busqueda}"
+                # Buscamos solo el primer resultado para que sea rápido
+                query = f"scsearch1:{busqueda}"
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    st.write("📡 Descargando audio sin bloqueos...")
+                    st.write("📡 Descargando archivo desde SoundCloud...")
                     ydl.download([query])
 
                 st.write("🎹 Ajustando el tono perfecto...")
@@ -57,5 +56,5 @@ if st.button("✨ PREPARAR MI PISTA"):
                 os.remove("pista_final.mp3")
 
             except Exception as e:
-                st.error("YouTube está muy estricto hoy. Por favor, intenta escribir el nombre de la canción de forma diferente.")
-                st.info("Tip: Intenta poner el nombre del artista + 'karaoke'.")
+                st.error("El servidor de música está saturado. Prueba escribiendo el nombre de forma diferente.")
+                st.info(f"Nota técnica: {e}")
