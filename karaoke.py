@@ -35,7 +35,6 @@ st.markdown("""
 
 # --- CONTENIDO ---
 st.markdown("<h1>🎤 STUDIO DE PISTAS VIP</h1>", unsafe_allow_html=True)
-st.markdown("<p style='text-align: center; color: #b0b0b0;'>El regalo especial para la mejor cantante: Mamá ❤️</p>", unsafe_allow_html=True)
 st.write("---")
 
 # Organización en columnas
@@ -100,3 +99,4 @@ if st.button("✨ ¡CREAR MI PISTA MÁGICA!"):
 
 st.write("---")
 st.markdown("<p style='text-align: center; font-size: 0.8em; color: gray;'>Hecho con amor por su hijo favorito</p>", unsafe_allow_html=True)
+
