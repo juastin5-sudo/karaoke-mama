@@ -12,57 +12,56 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-st.title("🎤 Studio Mágico de Mamá")
-st.write("Buscando versiones completas en servidores libres...")
+st.title("🎤 Studio de Mamá (Versión Completa)")
+st.write("Buscando en servidores de música libre (No usa YouTube).")
 
-busqueda = st.text_input("🔍 ¿Qué canción quieres hoy?", placeholder="Ej: Amor Eterno Rocio Durcal")
+busqueda = st.text_input("🔍 Escribe el nombre de la canción:", placeholder="Ej: Rocio Durcal Amor Eterno")
 tono = st.select_slider("🎶 Ajustar Tono:", options=[-4, -3, -2, -1, 0, 1, 2], value=-2)
 
-if st.button("✨ PREPARAR MI PISTA"):
+if st.button("✨ PREPARAR CANCIÓN COMPLETA"):
     if busqueda:
-        with st.status("🚀 Buscando canción completa...", expanded=True) as status:
+        with st.status("🚀 Buscando en el puente de música libre...", expanded=True) as status:
             try:
-                # CAMBIO CLAVE: Usamos 'ba' (best audio) y buscamos en motores sin preview
+                # CONFIGURACIÓN SIN YOUTUBE
                 ydl_opts = {
                     'format': 'bestaudio/best',
                     'outtmpl': 'pista_temporal',
                     'postprocessors': [{'key': 'FFmpegExtractAudio', 'preferredcodec': 'mp3'}],
-                    # Buscamos en motores que no cortan el audio
-                    'default_search': 'ytsearch', 
+                    # Bloqueamos YouTube y forzamos buscadores de música abierta como Audiomack o Jamendo
+                    'default_search': 'amsearch', # 'amsearch' busca en Audiomack (canciones completas)
                     'nocheckcertificate': True,
-                    # Intentamos saltar el bloqueo de 403 con una IP de rotación simulada
-                    'source_address': '0.0.0.0',
-                    'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+                    'quiet': True,
                 }
 
-                # Forzamos a buscar versiones de Karaoke que suelen ser libres
-                query = f"ytsearch1:{busqueda} karaoke"
+                # Buscamos la canción completa
+                query = f"amsearch1:{busqueda}"
 
                 with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-                    st.write("📡 Descargando archivo completo...")
+                    st.write("📡 Descargando archivo desde el puente Audiomack...")
                     ydl.download([query])
 
-                st.write("🎹 Cambiando el tono...")
+                st.write("🎹 Cambiando el tono a la pista entera...")
                 audio = AudioSegment.from_file("pista_temporal.mp3")
                 
-                # Verificamos duración para avisar si es corta
-                if len(audio) < 60000:
-                    st.warning("⚠️ El servidor entregó una versión corta. Intentando otro motor...")
-                
+                # Proceso de cambio de tono
                 new_rate = int(audio.frame_rate * (2.0 ** (tono / 12.0)))
                 pista = audio._spawn(audio.raw_data, overrides={'frame_rate': new_rate}).set_frame_rate(audio.frame_rate)
                 pista.export("pista_final.mp3", format="mp3")
                 
-                status.update(label="✅ ¡Pista lista!", state="complete")
+                status.update(label="✅ ¡Pista terminada!", state="complete")
                 st.balloons()
+                
+                # Mostramos el tiempo real de la canción
+                duracion_segundos = len(audio) / 1000
+                st.success(f"Duración obtenida: {int(duracion_segundos // 60)} min {int(duracion_segundos % 60)} seg")
                 
                 st.audio("pista_final.mp3")
                 with open("pista_final.mp3", "rb") as f:
-                    st.download_button("⬇️ DESCARGAR MP3 COMPLETO", f, file_name="pista_karaoke.mp3")
+                    st.download_button("⬇️ DESCARGAR MP3 COMPLETO", f, file_name="pista_completa.mp3")
                 
                 os.remove("pista_temporal.mp3")
                 os.remove("pista_final.mp3")
 
             except Exception as e:
-                st.error("Error al obtener la versión completa. Intenta con otra canción.")
+                st.error("No encontramos esa canción en el servidor libre. Prueba escribiendo el nombre del artista de nuevo.")
                 st.info(f"Nota: {e}")
