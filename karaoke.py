@@ -48,23 +48,26 @@ if st.button("🚀 PREPARAR PISTA"):
             archivo_original = loop.run_until_complete(descargar_de_telegram(busqueda))
             
             if archivo_original:
-                nombre_final = "pista_pro.mp3"
-                centisimos = tono * 100
-                
-               if archivo_original:
                 nombre_limpio = "audio_estandar.wav"
                 nombre_final = "pista_pro.mp3"
                 centisimos = tono * 100
                 
                 if tono == 0:
                     status.write("🎸 Preparando audio original...")
+                    if os.path.exists(nombre_final): os.remove(nombre_final)
                     os.rename(archivo_original, nombre_final)
                     resultado = 0
                 else:
                     status.write("🎸 Limpiando formato y ajustando tono...")
+                    # PASO 1: Convertir a WAV estándar para que SoX no se confunda
+                    os.system(f'ffmpeg -i "{archivo_original}" -ar 44100 "{nombre_limpio}" -y')
                     
-                    # PASO 1: FFmpeg convierte CUALQUIER cosa a un WAV estándar que SoX entienda perfecto
-                    os.system(f'ffmpeg -i "{archivo_original}" -ar 441
+                    # PASO 2: Ajustar el tono con SoX
+                    comando_sox = f'sox "{nombre_limpio}" -t mp3 "{nombre_final}" pitch {centisimos}'
+                    resultado = os.system(comando_sox)
+                    
+                    # Limpieza temporal del WAV
+                    if os.path.exists(nombre_limpio): os.remove(nombre_limpio)
 
                 if resultado == 0 and os.path.exists(nombre_final):
                     status.update(label="💖 ¡Lista para cantar!", state="complete")
@@ -72,7 +75,11 @@ if st.button("🚀 PREPARAR PISTA"):
                     with open(nombre_final, "rb") as f:
                         st.download_button("⬇️ Descargar MP3", f, file_name=f"karaoke_{busqueda}.mp3")
                 else:
-                    st.error("Error al procesar el audio.")
+                    st.error("Error al procesar el audio con SoX.")
                 
+                # Limpiar el archivo descargado originalmente
                 if os.path.exists(archivo_original): os.remove(archivo_original)
+            else:
+                st.error("No se pudo descargar la canción de Telegram.")
+
 
