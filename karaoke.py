@@ -22,7 +22,6 @@ async def descargar_de_telegram(nombre_cancion):
     await client.connect()
     try:
         async with client.conversation('@vkmusic_bot', timeout=60) as conv:
-            # Buscamos la canción normal para evitar errores del bot
             await conv.send_message(nombre_cancion)
             respuesta = await conv.get_response()
             if hasattr(respuesta, 'buttons') and respuesta.buttons:
@@ -58,21 +57,22 @@ if st.button("🚀 PREPARAR PISTA"):
                 nombre_final = "pista_pro.mp3"
                 
                 status.write("🎸 Estabilizando audio...")
-                # Convertimos a WAV estéreo para poder manipular los canales
+                # Convertimos a WAV estéreo
                 os.system(f'ffmpeg -i "{archivo_original}" -ar 44100 -ac 2 "{nombre_limpio}" -y')
                 
-                # Proceso de Audio
                 if quitar_voz:
                     status.write("🧠 Eliminando voz del artista...")
-                    # Filtro avanzado: resta canales para quitar voz + ecualizador para salvar bajos
+                    # Filtro simplificado: 
+                    # 1. 'pan' para restar canales (quita voz central)
+                    # 2. 'equalizer' simple para recuperar bajos (sin usar c0/c1)
+                    # 3. 'rubberband' para el tono
                     factor_pitch = 2**(tono/12)
-                    comando = (
-                        f'ffmpeg -i "{nombre_limpio}" -af '
-                        f'"pan=stereo|c0=c0-c1|c1=c1-c0, '
-                        f'anequalizer=c0=f=100:w=100:g=10|c1=f=100:w=100:g=10, '
-                        f'rubberband=pitch={factor_pitch}" '
-                        f'"{nombre_final}" -y'
+                    filtro_audio = (
+                        f"pan=stereo|c0=c0-c1|c1=c1-c0,"
+                        f"equalizer=f=100:width_type=h:width=200:g=10,"
+                        f"rubberband=pitch={factor_pitch}"
                     )
+                    comando = f'ffmpeg -i "{nombre_limpio}" -af "{filtro_audio}" "{nombre_final}" -y'
                 else:
                     status.write("✨ Ajustando tono...")
                     centisimos = tono * 100
@@ -83,12 +83,13 @@ if st.button("🚀 PREPARAR PISTA"):
                 if resultado == 0 and os.path.exists(nombre_final):
                     status.update(label="💖 ¡Lista para cantar!", state="complete")
                     st.audio(nombre_final)
-                    st.download_button("⬇️ Descargar MP3", open(nombre_final, "rb"), file_name=f"karaoke_{busqueda}.mp3")
+                    with open(nombre_final, "rb") as f:
+                        st.download_button("⬇️ Descargar MP3", f, file_name=f"karaoke_{busqueda}.mp3")
                 else:
-                    st.error("Hubo un problema al procesar el audio.")
+                    st.error("Hubo un problema técnico al procesar el audio.")
                 
-                # Limpiar archivos temporales
-                for f in [nombre_limpio, archivo_original]:
-                    if os.path.exists(f): os.remove(f)
+                # Limpieza
+                if os.path.exists(nombre_limpio): os.remove(nombre_limpio)
+                if os.path.exists(archivo_original): os.remove(archivo_original)
             else:
-                st.error("No se pudo obtener la canción. Intenta buscarla de nuevo.")
+                st.error("No se pudo obtener la canción.")
