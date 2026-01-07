@@ -25,22 +25,25 @@ async def descargar_de_telegram(nombre_cancion):
     await client.connect()
     
     try:
-        async with client.conversation('@DeezerMusicBot', timeout=30) as conv:
+        # Cambiamos al nuevo bot
+        async with client.conversation('@vkmusic_bot', timeout=40) as conv:
+            # 1. Enviamos la canción
             await conv.send_message(nombre_cancion)
-            # Esperamos a que el bot responda la lista
+            
+            # 2. El bot responderá con una lista de canciones
             respuesta = await conv.get_response()
             
-            # Si el bot manda botones, presionamos el primero enviando "1"
-            if hasattr(respuesta, 'reply_markup') and respuesta.reply_markup:
-                await conv.send_message("1")
-                # Esperamos el audio tras elegir la opción 1
-                respuesta = await conv.get_response()
+            # 3. Enviamos "1" para elegir el primer resultado de la lista
+            await conv.send_message("1")
             
-            if respuesta.audio:
-                path = await respuesta.download_media(file="pista_original.mp3")
+            # 4. Esperamos el audio (le damos 20 seg por si el bot está lento)
+            audio_msg = await conv.get_response()
+            
+            if audio_msg.audio:
+                path = await audio_msg.download_media(file="pista_original.mp3")
                 return path
     except Exception as e:
-        st.error(f"Error de conexión: {e}")
+        st.error(f"El bot no respondió: {e}")
     finally:
         await client.disconnect()
     return None
@@ -69,3 +72,4 @@ if st.button("🚀 PREPARAR PISTA"):
             else:
                 status.update(label="❌ No se encontró la canción", state="error")
                 st.error("El bot no respondió a tiempo o no encontró resultados.")
+
