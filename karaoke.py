@@ -47,7 +47,7 @@ async def descargar_de_telegram(nombre_cancion):
 
 # 4. INTERFAZ DE USUARIO
 busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - Costumbres")
-tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, -2)
+tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, 0)
 
 if st.button("🚀 PREPARAR PISTA"):
     if busqueda:
@@ -91,3 +91,4 @@ if st.button("🚀 PREPARAR PISTA"):
                 else:
                     status.update(label="❌ Error en el motor de audio", state="error")
                     st
+
