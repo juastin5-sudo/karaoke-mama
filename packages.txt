@@ -1,3 +1,5 @@
 ffmpeg
 sox
 libsox-fmt-all
+libsox-fmt-mp3
+libmp3lame0
