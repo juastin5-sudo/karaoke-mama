@@ -51,14 +51,20 @@ if st.button("🚀 PREPARAR PISTA"):
                 nombre_final = "pista_pro.mp3"
                 centisimos = tono * 100
                 
+               if archivo_original:
+                nombre_limpio = "audio_estandar.wav"
+                nombre_final = "pista_pro.mp3"
+                centisimos = tono * 100
+                
                 if tono == 0:
+                    status.write("🎸 Preparando audio original...")
                     os.rename(archivo_original, nombre_final)
                     resultado = 0
                 else:
-                    status.write("🎸 Estabilizando audio y ajustando tono...")
-                    # Comando ultra-seguro: forzamos frecuencia y formato
-                    comando = f'sox "{archivo_original}" -t mp3 "{nombre_final}" pitch {centisimos} rate 44100'
-                    resultado = os.system(comando)
+                    status.write("🎸 Limpiando formato y ajustando tono...")
+                    
+                    # PASO 1: FFmpeg convierte CUALQUIER cosa a un WAV estándar que SoX entienda perfecto
+                    os.system(f'ffmpeg -i "{archivo_original}" -ar 441
 
                 if resultado == 0 and os.path.exists(nombre_final):
                     status.update(label="💖 ¡Lista para cantar!", state="complete")
@@ -69,3 +75,4 @@ if st.button("🚀 PREPARAR PISTA"):
                     st.error("Error al procesar el audio.")
                 
                 if os.path.exists(archivo_original): os.remove(archivo_original)
+
