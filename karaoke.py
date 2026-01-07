@@ -15,7 +15,7 @@ except:
     st.error("⚠️ Error: Faltan las llaves en Secrets.")
     st.stop()
 
-st.title("🎤 El Studio de Mamá")
+st.title("CONVERTIDOR DE AUDIO")
 
 async def descargar_de_telegram(nombre_cancion):
     client = TelegramClient(StringSession(SESSION), API_ID, API_HASH)
@@ -96,3 +96,4 @@ if st.button("🚀 PREPARAR PISTA"):
                     os.remove(archivo_original)
             else:
                 st.error("No se encontró la canción. Intenta buscarla con otro nombre.")
+
