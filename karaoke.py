@@ -4,69 +4,68 @@ from telethon.sessions import StringSession
 import asyncio
 import os
 
-# 1. CONFIGURACIÓN DE LA PÁGINA
 st.set_page_config(page_title="El Studio de Mamá", page_icon="🎤")
 
-# 2. CARGAR LLAVES DESDE LOS SECRETS
+# Cargar llaves
 try:
     API_ID = st.secrets["TELEGRAM_API_ID"]
     API_HASH = st.secrets["TELEGRAM_API_HASH"]
     SESSION = st.secrets["TELEGRAM_SESSION"]
-except Exception as e:
-    st.error("⚠️ Error: No se encontraron las llaves en los Secrets de Streamlit.")
+except:
+    st.error("⚠️ Error: Faltan las llaves en Secrets.")
     st.stop()
 
 st.title("🎤 El Studio de Mamá")
-st.markdown("Busca tu canción, ajusta el tono y ¡prepárate para brillar!")
 
-# 3. FUNCIÓN DE TELEGRAM (CON CLIC EN BOTONES)
 async def descargar_de_telegram(nombre_cancion):
     client = TelegramClient(StringSession(SESSION), API_ID, API_HASH)
     await client.connect()
-    
     try:
         async with client.conversation('@vkmusic_bot', timeout=60) as conv:
-            # Enviamos el nombre de la canción
             await conv.send_message(nombre_cancion)
-            
-            # Esperamos la respuesta (la lista con botones)
             respuesta = await conv.get_response()
-            
-            # Si el bot envía botones, hacemos clic en el primero
             if hasattr(respuesta, 'buttons') and respuesta.buttons:
                 await respuesta.click(0, 0)
-                
-                # Esperamos el archivo de audio que el bot envía tras el clic
                 audio_msg = await conv.get_response()
-                
                 if audio_msg.audio:
-                    path = await audio_msg.download_media(file="temp_audio.mp3")
-                    return path
+                    return await audio_msg.download_media(file="temp_audio.mp3")
             elif hasattr(respuesta, 'audio') and respuesta.audio:
                 return await respuesta.download_media(file="temp_audio.mp3")
-                    
     except Exception as e:
-        st.error(f"Hubo un problema con el bot: {e}")
+        st.error(f"Error con el bot: {e}")
     finally:
         await client.disconnect()
     return None
 
-# 4. INTERFAZ DE USUARIO
 busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - Costumbres")
 tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, 0)
 
 if st.button("🚀 PREPARAR PISTA"):
     if busqueda:
-        with st.status("🎼 Procesando pista profesional...", expanded=True) as status:
-            # Ejecutamos la descarga de Telegram
+        with st.status("🎼 Procesando...", expanded=True) as status:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             archivo_original = loop.run_until_complete(descargar_de_telegram(busqueda))
             
             if archivo_original:
                 nombre_final = "pista_pro.mp3"
-                cwd = os.getcwd()
-                ruta_entrada = os.path.join(cwd, archivo_original)
-                ruta_salida = os.path.join(cwd, nombre_final)
+                centisimos = tono * 100
+                
+                if tono == 0:
+                    os.rename(archivo_original, nombre_final)
+                    resultado = 0
+                else:
+                    status.write("🎸 Estabilizando audio y ajustando tono...")
+                    # Comando ultra-seguro: forzamos frecuencia y formato
+                    comando = f'sox "{archivo_original}" -t mp3 "{nombre_final}" pitch {centisimos} rate 44100'
+                    resultado = os.system(comando)
 
-                # Si ya existía una pista anterior, la borramos
+                if resultado == 0 and os.path.exists(nombre_final):
+                    status.update(label="💖 ¡Lista para cantar!", state="complete")
+                    st.audio(nombre_final)
+                    with open(nombre_final, "rb") as f:
+                        st.download_button("⬇️ Descargar MP3", f, file_name=f"karaoke_{busqueda}.mp3")
+                else:
+                    st.error("Error al procesar el audio.")
+                
+                if os.path.exists(archivo_original): os.remove(archivo_original)
