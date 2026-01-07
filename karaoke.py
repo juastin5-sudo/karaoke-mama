@@ -1,58 +1,54 @@
 import streamlit as st
-import requests
-import os
+from telethon import TelegramClient
+from telethon.sessions import StringSession
+import asyncio
 from pydub import AudioSegment
+import os
 
-st.set_page_config(page_title="Karaoke VIP para Mamá", page_icon="🎤")
+# Sacamos las llaves del "Cajón de Secretos"
+API_ID = st.secrets["TELEGRAM_API_ID"]
+API_HASH = st.secrets["TELEGRAM_API_HASH"]
+SESSION = st.secrets["TELEGRAM_SESSION"]
 
-st.title("🎤 Studio Mágico de Mamá")
-st.write("Buscando versiones COMPLETAS (Sin YouTube).")
+st.set_page_config(page_title="El Studio de Mamá", page_icon="🎤")
+st.title("🎤 El Studio de Mamá")
+st.markdown("Busca tu canción, ajusta el tono y ¡a cantar!")
 
-nombre_cancion = st.text_input("🔍 Nombre de la canción:", placeholder="Ej: Rocio Durcal Amor Eterno")
-tono = st.select_slider("🎶 Ajustar Tono:", options=[-4, -3, -2, -1, 0, 1, 2], value=-2)
+async def descargar_de_telegram(nombre_cancion):
+    # Iniciamos el cliente usando la Llave Maestra
+    client = TelegramClient(StringSession(SESSION), API_ID, API_HASH)
+    await client.connect()
+    
+    # Buscamos al bot de música
+    async with client.conversation('@DeezerMusicBot') as conv:
+        await conv.send_message(nombre_cancion)
+        respuesta = await conv.get_response()
+        if respuesta.audio:
+            path = await respuesta.download_media(file="pista_original.mp3")
+            return path
+    return None
 
-if st.button("✨ ¡PREPARAR MI CANCIÓN!"):
-    if nombre_cancion:
-        with st.status("🚀 Buscando archivo completo...", expanded=True) as status:
-            try:
-                # 1. Buscamos en un motor que nos da la duración real
-                # Usaremos un motor de búsqueda que filtra por archivos de más de 2 minutos
-                st.write("📡 Conectando con el servidor de música...")
+busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Juan Gabriel - Abrázame muy fuerte")
+tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, -2)
+
+if st.button("🚀 PREPARAR PISTA"):
+    if busqueda:
+        with st.spinner("Buscando y preparando... esto tarda unos segundos."):
+            loop = asyncio.new_event_loop()
+            asyncio.set_event_loop(loop)
+            archivo = loop.run_until_complete(descargar_de_telegram(busqueda))
+            
+            if archivo:
+                # Procesamos el audio
+                audio = AudioSegment.from_file(archivo)
+                nuevo_sample_rate = int(audio.frame_rate * (2.0 ** (tono / 12.0)))
+                pista_final = audio._spawn(audio.raw_data, overrides={'frame_rate': nuevo_sample_rate}).set_frame_rate(audio.frame_rate)
+                pista_final.export("pista_lista.mp3", format="mp3")
                 
-                # Este es un buscador de MP3 que intenta saltar las restricciones
-                search_url = f"https://api.deezer.com/search?q={nombre_cancion}"
-                res = requests.get(search_url).json()
-                
-                if res['data']:
-                    # Buscamos el ID de la canción para intentar el "bypass"
-                    track = res['data'][0]
-                    st.write(f"🎵 Encontrado: {track['title']} (Completo)")
-                    
-                    # 2. EL PUENTE: Usamos un servidor de conversión externo que no es YT
-                    # Usamos un enlace de descarga directa que simula un navegador
-                    st.write("📥 Descargando pista completa al Studio...")
-                    
-                    # Este link es un ejemplo de cómo los servidores de descarga obtienen el archivo
-                    # Usamos un proxy para que Render no sea detectado
-                    audio_res = requests.get(track['preview']) # Sigue siendo preview, pero...
-                    
-                    # --- AQUÍ ESTÁ LA VERDAD ---
-                    # Si Apple, Deezer y YouTube nos bloquean, el código no puede inventar el audio.
-                    # La ÚNICA forma de que dure 3 o 4 minutos sin que tú pagues una API de $50 al mes
-                    # es que usemos el código de SUBIR ARCHIVO.
-                    
-                    with open("temp.mp3", "wb") as f:
-                        f.write(audio_res.content)
-                    
-                    audio = AudioSegment.from_file("temp.mp3")
-                    new_rate = int(audio.frame_rate * (2.0 ** (tono / 12.0)))
-                    pista = audio._spawn(audio.raw_data, overrides={'frame_rate': new_rate}).set_frame_rate(audio.frame_rate)
-                    pista.export("final.mp3", format="mp3")
-                    
-                    status.update(label="✅ ¡Procesado!", state="complete")
-                    st.audio("final.mp3")
-                    st.download_button("⬇️ DESCARGAR", open("final.mp3", "rb"), file_name="pista.mp3")
-                else:
-                    st.error("No se encontró la canción.")
-            except Exception as e:
-                st.error(f"Error: {e}")
+                st.success("¡Aquí tienes tu pista!")
+                st.audio("pista_lista.mp3")
+                with open("pista_lista.mp3", "rb") as f:
+                    st.download_button("⬇️ Descargar MP3", f, file_name=f"pista_{busqueda}.mp3")
+            else:
+                st.error("No pude encontrar esa canción. Intenta con otro nombre.")
+
