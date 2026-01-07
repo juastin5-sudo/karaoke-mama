@@ -17,9 +17,9 @@ except Exception as e:
     st.stop()
 
 st.title("🎤 El Studio de Mamá")
-st.markdown("Busca tu canción, ajusta el tono y ¡la velocidad se mantendrá original!")
+st.markdown("Busca tu canción, ajusta el tono y ¡prepárate para cantar!")
 
-# 3. FUNCIÓN DE TELEGRAM
+# 3. FUNCIÓN DE TELEGRAM (CON CLIC EN BOTONES)
 async def descargar_de_telegram(nombre_cancion):
     client = TelegramClient(StringSession(SESSION), API_ID, API_HASH)
     await client.connect()
@@ -29,14 +29,14 @@ async def descargar_de_telegram(nombre_cancion):
             await conv.send_message(nombre_cancion)
             respuesta = await conv.get_response()
             
-            if respuesta.buttons:
+            if hasattr(respuesta, 'buttons') and respuesta.buttons:
                 await respuesta.click(0, 0)
                 audio_msg = await conv.get_response()
                 if audio_msg.audio:
-                    # Guardamos con un nombre limpio para SoX
+                    # Guardamos con un nombre base
                     path = await audio_msg.download_media(file="temp_audio.mp3")
                     return path
-            elif respuesta.audio:
+            elif hasattr(respuesta, 'audio') and respuesta.audio:
                 return await respuesta.download_media(file="temp_audio.mp3")
                     
     except Exception as e:
@@ -46,7 +46,7 @@ async def descargar_de_telegram(nombre_cancion):
     return None
 
 # 4. INTERFAZ DE USUARIO
-busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - La gata bajo la lluvia")
+busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - Costumbres")
 tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, -2)
 
 if st.button("🚀 PREPARAR PISTA"):
@@ -60,21 +60,23 @@ if st.button("🚀 PREPARAR PISTA"):
             if archivo_original:
                 status.write("🎸 Ajustando tono sin cambiar la velocidad...")
                 
-                # Nombre del archivo de salida
-                nombre_final = f"pista_pro.mp3"
+                # Definimos rutas absolutas para evitar errores en el servidor
+                cwd = os.getcwd()
+                ruta_entrada = os.path.join(cwd, archivo_original)
+                nombre_final = "pista_pro.mp3"
+                ruta_salida = os.path.join(cwd, nombre_final)
                 
                 # SoX usa "cents" (100 cents = 1 semitono)
                 centisimos = tono * 100
                 
-                # COMANDO MÁGICO DE SOX: cambia el pitch sin cambiar el tempo
-                # Usamos os.system para ejecutar SoX en el servidor
-                comando = f'sox "{archivo_original}" "{nombre_final}" pitch {centisimos}'
-                os.system(comando)
+                # COMANDO DE SOX: cambia el pitch sin cambiar el tiempo
+                comando = f'sox "{ruta_entrada}" "{ruta_salida}" pitch {centisimos}'
+                resultado = os.system(comando)
                 
-                status.update(label="✅ ¡Tono ajustado profesionalmente!", state="complete")
-                
-                # REPRODUCTOR Y BOTÓN
-                if os.path.exists(nombre_final):
+                if resultado == 0 and os.path.exists(ruta_salida):
+                    status.update(label="💖 ¡Tu pista está lista, Reina! A brillar.", state="complete")
+                    
+                    # REPRODUCTOR Y BOTÓN
                     st.audio(nombre_final)
                     with open(nombre_final, "rb") as f:
                         st.download_button(
@@ -84,11 +86,8 @@ if st.button("🚀 PREPARAR PISTA"):
                             mime="audio/mp3"
                         )
                     
-                    # Limpieza
-                    os.remove(archivo_original)
+                    # Limpieza de archivos temporales
+                    if os.path.exists(ruta_entrada): os.remove(ruta_entrada)
                 else:
-                    st.error("Hubo un error al procesar el audio con SoX.")
-            else:
-                status.update(label="❌ No se encontró la canción", state="error")
-    else:
-        st.warning("Escribe el nombre de una canción primero.")
+                    status.update(label="❌ Error en el motor de audio", state="error")
+                    st
