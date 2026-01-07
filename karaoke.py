@@ -33,7 +33,6 @@ async def descargar_de_telegram(nombre_cancion):
                 await respuesta.click(0, 0)
                 audio_msg = await conv.get_response()
                 if audio_msg.audio:
-                    # Guardamos con un nombre base
                     path = await audio_msg.download_media(file="temp_audio.mp3")
                     return path
             elif hasattr(respuesta, 'audio') and respuesta.audio:
@@ -46,39 +45,43 @@ async def descargar_de_telegram(nombre_cancion):
     return None
 
 # 4. INTERFAZ DE USUARIO
-busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - Costumbres")
+busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - La gata bajo la lluvia")
 tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, 0)
 
 if st.button("🚀 PREPARAR PISTA"):
     if busqueda:
         with st.status("🎼 Procesando pista profesional...", expanded=True) as status:
-            # Ejecutamos la descarga
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
             archivo_original = loop.run_until_complete(descargar_de_telegram(busqueda))
             
             if archivo_original:
-                status.write("🎸 Ajustando tono sin cambiar la velocidad...")
-                
-                # Definimos rutas absolutas para evitar errores en el servidor
+                nombre_final = "pista_pro.mp3"
                 cwd = os.getcwd()
                 ruta_entrada = os.path.join(cwd, archivo_original)
-                nombre_final = "pista_pro.mp3"
                 ruta_salida = os.path.join(cwd, nombre_final)
-                
-                # SoX usa "cents" (100 cents = 1 semitono)
-                centisimos = tono * 100
-                
-                # COMANDO DE SOX: cambia el pitch sin cambiar el tiempo
-                comando = f'sox "{ruta_entrada}" "{ruta_salida}" pitch {centisimos}'
-                resultado = os.system(comando)
-                
+
+                # Si ya existía una pista anterior, la borramos para evitar conflictos
+                if os.path.exists(ruta_salida):
+                    os.remove(ruta_salida)
+
+                # LÓGICA DE PROCESAMIENTO
+                if tono == 0:
+                    status.write("🎸 Tono original detectado...")
+                    os.rename(ruta_entrada, ruta_salida)
+                    resultado = 0 
+                else:
+                    status.write(f"🎸 Ajustando tono ({tono}) y estabilizando audio...")
+                    centisimos = tono * 100
+                    # Comando blindado: Pitch + Estabilización de frecuencia a 44.1kHz
+                    comando = f'sox "{ruta_entrada}" -t mp3 "{ruta_salida}" pitch {centisimos} rate 44100'
+                    resultado = os.system(comando)
+
                 if resultado == 0 and os.path.exists(ruta_salida):
                     status.update(label="💖 ¡Tu pista está lista, Reina! A brillar.", state="complete")
                     
-                    # REPRODUCTOR Y BOTÓN
-                    st.audio(nombre_final)
-                    with open(nombre_final, "rb") as f:
+                    st.audio(ruta_salida)
+                    with open(ruta_salida, "rb") as f:
                         st.download_button(
                             label="⬇️ Descargar MP3",
                             data=f,
@@ -86,9 +89,11 @@ if st.button("🚀 PREPARAR PISTA"):
                             mime="audio/mp3"
                         )
                     
-                    # Limpieza de archivos temporales
                     if os.path.exists(ruta_entrada): os.remove(ruta_entrada)
                 else:
-                    status.update(label="❌ Error en el motor de audio", state="error")
-                    st
-
+                    status.update(label="❌ Error de procesamiento", state="error")
+                    st.error("SoX no pudo procesar el archivo correctamente.")
+            else:
+                status.update(label="❌ No se encontró la canción", state="error")
+    else:
+        st.warning("Escribe el nombre de una canción primero.")
