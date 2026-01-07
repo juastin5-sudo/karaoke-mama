@@ -4,7 +4,7 @@ from telethon.sessions import StringSession
 import asyncio
 import os
 
-st.set_page_config(page_title="El Studio de Mamá", page_icon="🎤")
+st.set_page_config(page_title="CONVERTIDOR DE AUDIO", page_icon="🎤")
 
 # Cargar llaves
 try:
@@ -96,4 +96,5 @@ if st.button("🚀 PREPARAR PISTA"):
                     os.remove(archivo_original)
             else:
                 st.error("No se encontró la canción. Intenta buscarla con otro nombre.")
+
 
