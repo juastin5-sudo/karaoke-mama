@@ -37,8 +37,14 @@ async def descargar_de_telegram(nombre_cancion):
         await client.disconnect()
     return None
 
+# --- Interfaz de Usuario ---
 busqueda = st.text_input("🎵 ¿Qué canción quieres cantar hoy?", placeholder="Ej: Rocio Durcal - Costumbres")
-tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, 0)
+
+col1, col2 = st.columns(2)
+with col1:
+    tono = st.slider("✨ Ajustar tono (Semitonos):", -5, 5, 0)
+with col2:
+    quitar_voz = st.checkbox("✂️ Intentar quitar voz (Modo Karaoke)", value=False)
 
 if st.button("🚀 PREPARAR PISTA"):
     if busqueda:
@@ -52,34 +58,32 @@ if st.button("🚀 PREPARAR PISTA"):
                 nombre_final = "pista_pro.mp3"
                 centisimos = tono * 100
                 
-                if tono == 0:
-                    status.write("🎸 Preparando audio original...")
-                    if os.path.exists(nombre_final): os.remove(nombre_final)
-                    os.rename(archivo_original, nombre_final)
-                    resultado = 0
-                else:
-                    status.write("🎸 Limpiando formato y ajustando tono...")
-                    # PASO 1: Convertir a WAV estándar para que SoX no se confunda
-                    os.system(f'ffmpeg -i "{archivo_original}" -ar 44100 "{nombre_limpio}" -y')
-                    
-                    # PASO 2: Ajustar el tono con SoX
-                    comando_sox = f'sox "{nombre_limpio}" -t mp3 "{nombre_final}" pitch {centisimos}'
-                    resultado = os.system(comando_sox)
-                    
-                    # Limpieza temporal del WAV
-                    if os.path.exists(nombre_limpio): os.remove(nombre_limpio)
-
+                status.write("🎸 Limpiando formato...")
+                # PASO 1: Convertir a WAV estándar
+                os.system(f'ffmpeg -i "{archivo_original}" -ar 44100 -ac 2 "{nombre_limpio}" -y')
+                
+                status.write("🛠️ Aplicando efectos de audio...")
+                
+                # PASO 2: Construir comando de SoX
+                # 'oops' es el efecto de Out of Phase Stereo para remover voces
+                efecto_voz = "oops" if quitar_voz else ""
+                comando_sox = f'sox "{nombre_limpio}" -t mp3 "{nombre_final}" pitch {centisimos} {efecto_voz}'
+                
+                resultado = os.system(comando_sox)
+                
                 if resultado == 0 and os.path.exists(nombre_final):
                     status.update(label="💖 ¡Lista para cantar!", state="complete")
                     st.audio(nombre_final)
                     with open(nombre_final, "rb") as f:
                         st.download_button("⬇️ Descargar MP3", f, file_name=f"karaoke_{busqueda}.mp3")
                 else:
-                    st.error("Error al procesar el audio con SoX.")
+                    st.error("Error al procesar el audio.")
                 
-                # Limpiar el archivo descargado originalmente
+                # Limpieza
+                if os.path.exists(nombre_limpio): os.remove(nombre_limpio)
                 if os.path.exists(archivo_original): os.remove(archivo_original)
             else:
-                st.error("No se pudo descargar la canción de Telegram.")
+                st.error("No se encontró la canción.")
+
 
 
