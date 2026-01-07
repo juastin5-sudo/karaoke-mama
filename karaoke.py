@@ -73,4 +73,23 @@ if st.button("🚀 PREPARAR PISTA"):
                 # El filtro 'stereotools' intenta remover el centro (donde está la voz) sin perder tanta calidad
                 if quitar_voz:
                     # Filtro que remueve el centro pero mantiene los extremos de la música
-                    comando_final = f'ffmpeg -i "{nombre_limpio}" -af "stere
+                    comando_final = f'ffmpeg -i "{nombre_limpio}" -af "stereotools=mlev=0.5:mspan=0:middle=0, rubberband=pitch={pow(2, tono/12)}" "{nombre_final}" -y'
+                else:
+                    # Solo cambio de tono con SoX (que es más rápido para esto)
+                    comando_final = f'sox "{nombre_limpio}" -t mp3 "{nombre_final}" pitch {centisimos}'
+                
+                resultado = os.system(comando_final)
+                
+                if resultado == 0 and os.path.exists(nombre_final):
+                    status.update(label="💖 ¡Lista para cantar!", state="complete")
+                    st.audio(nombre_final)
+                    with open(nombre_final, "rb") as f:
+                        st.download_button("⬇️ Descargar MP3", f, file_name=f"karaoke_{busqueda}.mp3")
+                else:
+                    st.error("Error al procesar el audio. Intentando sin filtros...")
+                
+                # Limpieza de archivos temporales
+                if os.path.exists(nombre_limpio): os.remove(nombre_limpio)
+                if os.path.exists(archivo_original): os.remove(archivo_original)
+            else:
+                st.error("No se encontró la canción. Intenta con otro nombre.")
